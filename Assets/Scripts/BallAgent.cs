@@ -4,60 +4,35 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
-
-
+using Unity.VisualScripting;
 
 public class BallAgent : Agent
 {
-    public GameObject target;
+    public GameObject Target;
+    private GameObject targetInstance;
 
     public float speed = 2.5f;
+    private float areaLim = 2.3f;
+
+    private Vector3 agentInitialPos;
 
 
-    // Start is called before the first frame update
-    void Start()
+    public override void Initialize()
     {
-        
+        Vector3 agentInitialPos = transform.position;
     }
 
     public override void OnEpisodeBegin()
     {
-        
-    }
+        transform.position = agentInitialPos;
 
-    public override void CollectObservations(VectorSensor sensor)
-    {
-        float rayDistance = 10f;
-        float[] rayAngles = { 0f, 30f, 60f, 90f, 120f, 150f, 180f, 210f, 240f, 270f, 300f, 330f };
-
-        foreach (float angle in rayAngles)
+        if (targetInstance != null)
         {
-            Vector3 rayDirection = Quaternion.Euler(0f, angle, 0f) * transform.forward;
-            RaycastHit hit;
-
-            if (Physics.Raycast(transform.position, rayDirection, out hit, rayDistance))
-            {
-                if (hit.collider.CompareTag("Wall"))
-                {
-                    // Obstacle (mur) détecté, ajoute la distance au mur en tant qu'observation
-                    sensor.AddObservation(hit.distance / rayDistance); // Distance normalisée entre 0 et 1
-                }
-                else if (hit.collider.CompareTag("Target"))
-                {
-                    // Cible détectée, ajoute la distance à la cible en tant qu'observation
-                    sensor.AddObservation(hit.distance / rayDistance); // Distance normalisée entre 0 et 1
-                }
-                else
-                {
-                    sensor.AddObservation(0f); // Aucun objet détecté
-                }
-            }
-            else
-            {
-                sensor.AddObservation(0f); // Aucun objet détecté
-            }
+            Destroy(targetInstance);
         }
+        SpawnTarget();
     }
+
     public override void OnActionReceived(ActionBuffers actions)
     {
         float verticalInput = actions.ContinuousActions[0];
@@ -65,6 +40,8 @@ public class BallAgent : Agent
 
         transform.Translate(Vector3.forward * speed * verticalInput * Time.deltaTime);
         transform.Translate(Vector3.right * speed * horizontalInput * Time.deltaTime);
+
+        SetReward(-0.05f);
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -76,5 +53,36 @@ public class BallAgent : Agent
 
         agentContinousAction[0] = verticalInput;
         agentContinousAction[1] = horizontalInput;
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Target"))
+        {
+            Debug.Log("Collision target");
+            Destroy(collision.gameObject);
+            SetReward(10.0f);
+            //SpawnTarget();
+            EndEpisode();
+        }
+        //if (collision.gameObject.CompareTag("Wall"))
+        //{
+        //    Debug.Log("Collision wall");
+        //    SetReward(-1.0f);
+        //    
+        //}
+
+    }
+
+    private void SpawnTarget()
+    {
+        float limTargetAreaX = Random.Range(-areaLim, areaLim);
+        float limTargetAreaY = Random.Range(-areaLim, areaLim);
+
+
+        Vector3 spawnPosition = new Vector3(limTargetAreaX, 0, limTargetAreaY);
+
+        targetInstance = Instantiate(Target, spawnPosition, Quaternion.identity);
+        
     }
 }
