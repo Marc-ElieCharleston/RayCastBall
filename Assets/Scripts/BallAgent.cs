@@ -10,21 +10,27 @@ public class BallAgent : Agent
 {
     public GameObject Target;
     private GameObject targetInstance;
+    public GameObject Area;
 
     public float speed = 2.5f;
     private float areaLim = 2.3f;
+    private float areaX;
+    private float areaZ;
 
     private Vector3 agentInitialPos;
 
 
     public override void Initialize()
     {
-        Vector3 agentInitialPos = transform.position;
+        areaX = Area.transform.position.x;
+        areaZ = Area.transform.position.z;
+
+        Vector3 agentInitialPos = new Vector3(areaX, 0, areaZ);
     }
 
     public override void OnEpisodeBegin()
     {
-        transform.position = agentInitialPos;
+        transform.position = new Vector3(areaX, 0, areaZ);
 
         if (targetInstance != null)
         {
@@ -80,7 +86,7 @@ public class BallAgent : Agent
         float limTargetAreaY = Random.Range(-areaLim, areaLim);
 
 
-        Vector3 spawnPosition = new Vector3(limTargetAreaX, 0, limTargetAreaY);
+        Vector3 spawnPosition = new Vector3(limTargetAreaX + areaX, 0, limTargetAreaY + areaZ);
 
         targetInstance = Instantiate(Target, spawnPosition, Quaternion.identity);
         
